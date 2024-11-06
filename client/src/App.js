@@ -3,34 +3,56 @@ import axios from 'axios';
 import './App.css';
 
 function App() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewURL, setPreviewURL] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null); // 업로드된 파일 저장
+  const [previewURL, setPreviewURL] = useState(null); // 파일 미리보기 URL 저장
 
+  // 파일이 선택되었을 때 호출되는 함수
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     setSelectedFile(file);
-  
-    // 파일을 Base64로 인코딩하여 저장
+
+    // 파일을 Base64로 인코딩하여 미리보기 URL로 사용
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result;
       setPreviewURL(base64String);
-      localStorage.setItem('previewURL', base64String); // Base64 문자열을 저장
+      localStorage.setItem('previewURL', base64String); // 미리보기 URL을 로컬 저장소에 저장
     };
     reader.readAsDataURL(file);
   };
 
+  // 파일을 백엔드로 업로드하고 결과를 받는 함수
   const handleUpload = async () => {
     if (!selectedFile) {
       alert('파일을 선택해주세요.');
       return;
     }
 
-    // 임시로 데이터 저장 및 페이지 이동
-    localStorage.setItem('personalColor', '쿨톤 여름');
-    // localStorage.setItem('fashionItems', JSON.stringify([AAAAA])); //패션 아이템 저장, 퍼스널 컬러에 맞는 색상 넘겨주기
-    localStorage.setItem('previewURL', previewURL); // 미리보기 URL을 로컬 저장소에 저장
+    // 실제 백엔드와 통신하는 부분 (임시로 주석 처리)
+    /*
+    const formData = new FormData();
+    formData.append('image', selectedFile);
 
+    try {
+      // 백엔드로 이미지 전송
+      const response = await axios.post('http://localhost:8000/api/predict', formData);
+      
+      // 백엔드에서 받은 데이터를 상태와 로컬 저장소에 저장
+      localStorage.setItem('personalColor', response.data.personal_color); // 퍼스널 컬러 저장
+      localStorage.setItem('fashionItems', JSON.stringify(response.data.fashion_items)); // 추천 아이템 저장
+      
+      // 결과 페이지로 이동
+      window.location.href = '/resultpage.html';
+    } catch (error) {
+      console.error('에러 발생:', error);
+    }
+    */
+
+    // 임시로 테스트용 데이터를 로컬 저장소에 저장하고 페이지 이동
+    localStorage.setItem('personalColor', '쿨톤 여름'); // 임시 퍼스널 컬러 데이터
+    localStorage.setItem('previewURL', previewURL); // 미리보기 URL 저장
+
+    // 결과 페이지로 이동
     window.location.href = '/resultpage.html';
   };
 
