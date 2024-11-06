@@ -21,9 +21,6 @@ function App() {
       return;
     }
 
-    // 백엔드 통신 부분 주석 처리하여 임시로 2페이지로 이동하게 함
-    /*
-    // image라는 이름으로 파일 추가
     const formData = new FormData(); 
     formData.append('image', selectedFile);
 
@@ -36,7 +33,7 @@ function App() {
     } catch (error) {
       console.error('에러 발생:', error);
     }
-    */
+    
 
     // 임시로 결과 페이지로 이동하고 임시 데이터 설정
     setPersonalColor('쿨톤 여름');
