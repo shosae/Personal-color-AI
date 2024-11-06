@@ -37,9 +37,15 @@
   </div>
 
   <script>
-    // 로컬 저장소에서 데이터를 불러와 화면에 표시
+    // 로컬 저장소에서 Base64 인코딩된 이미지를 불러와 화면에 표시
+    const previewURL = localStorage.getItem('previewURL');
+    if (previewURL) {
+      document.getElementById('uploadedImage').src = previewURL;
+    } else {
+      console.error('Preview URL not found in localStorage');
+    }
+
     document.getElementById('personalColor').textContent = localStorage.getItem('personalColor');
-    document.getElementById('uploadedImage').src = localStorage.getItem('previewURL');
 
     const fashionItems = JSON.parse(localStorage.getItem('fashionItems'));
     const fashionItemsContainer = document.createElement('ul');

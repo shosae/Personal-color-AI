@@ -9,7 +9,15 @@ function App() {
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     setSelectedFile(file);
-    setPreviewURL(URL.createObjectURL(file));
+  
+    // 파일을 Base64로 인코딩하여 저장
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result;
+      setPreviewURL(base64String);
+      localStorage.setItem('previewURL', base64String); // Base64 문자열을 저장
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleUpload = async () => {
@@ -18,32 +26,11 @@ function App() {
       return;
     }
 
-    // 주석으로 백엔드 통신 제거, 임시 데이터 전송
-    /*
-    const formData = new FormData();
-    formData.append('image', selectedFile);
-
-    try {
-      const response = await axios.post('http://localhost:8000/api/predict', formData);
-      const personalColor = response.data.personal_color;
-      const fashionItems = response.data.fashion_items;
-
-      // 결과 데이터 로컬 저장소에 저장
-      localStorage.setItem('personalColor', personalColor);
-      localStorage.setItem('fashionItems', JSON.stringify(fashionItems));
-
-      // 결과 페이지로 이동
-      window.location.href = '/resultpage.html';
-    } catch (error) {
-      console.error('에러 발생:', error);
-    }
-    */
-
-    // 임시 데이터 설정
+    // 임시로 데이터 저장 및 페이지 이동
     localStorage.setItem('personalColor', '쿨톤 여름');
     localStorage.setItem('fashionItems', JSON.stringify(['파스텔 블루 셔츠', '화이트 팬츠', '실버 액세서리']));
+    localStorage.setItem('previewURL', previewURL); // 미리보기 URL을 로컬 저장소에 저장
 
-    // 결과 페이지로 이동
     window.location.href = '/resultpage.html';
   };
 
