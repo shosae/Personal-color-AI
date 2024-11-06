@@ -39,7 +39,7 @@ function App() {
       
       // 백엔드에서 받은 데이터를 상태와 로컬 저장소에 저장
       localStorage.setItem('personalColor', response.data.personal_color); // 퍼스널 컬러 저장
-      localStorage.setItem('fashionItems', JSON.stringify(response.data.fashion_items)); // 추천 아이템 저장
+      localStorage.setItem('fashionItems', JSON.stringify(response.data.fashion_items)); // 퍼스널컬러에 맞는 색을 받아와서 무신사 링크에 추가
       
       // 결과 페이지로 이동
       window.location.href = '/resultpage.html';
