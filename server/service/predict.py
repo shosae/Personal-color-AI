@@ -4,11 +4,10 @@ from torch import nn
 from transformers import SegformerImageProcessor, SegformerForSemanticSegmentation
 import numpy as np
 from PIL import Image
-
-
-from fastapi import HTTPException
-from typing import Optional, List, Set
-
+import os
+from core.env import env
+import requests
+import json
 
 class PredictService:
     def get_rgb(self, model, image_processor, image):
@@ -52,3 +51,48 @@ class PredictService:
             "hair": hair_avg_rgb, 
             "eye": eye_avg_rgb 
             }
+    def predict_personal_color(self, response):
+        API_URL = "https://api.x.ai/v1/chat/completions"
+        API_KEY = env.get("API_KEY")
+
+        skin_rgb = response["skin"]
+        eye_rgb = response["eye"]
+        hair_rgb = response["hair"]
+
+        prompt = f"""
+        Given the following RGB values:
+        - Skin color: {skin_rgb}
+        - Eye color: {eye_rgb}
+        - Hair color: {hair_rgb}
+
+        Please determine the person's personal color season (Spring, Summer, Autumn, Winter).
+        Based on this season, recommend 3 types of fashion items (such as clothing colors, accessories, or makeup shades)
+        that would best complement this personal color type. Be specific in your recommendations.
+        """
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {API_KEY}"
+        }
+
+        data = {
+            "messages": [
+                {"role": "system", "content": "You are a personal color and fashion recommendation expert."},
+                {"role": "user", "content": prompt}
+            ],
+            "model": "grok-beta",
+            "stream": False,
+            "temperature": 0.7
+        }
+
+        response = requests.post(API_URL, headers=headers, data=json.dumps(data))
+        
+        if response.status_code == 200:
+            result = response.json()
+            fashion_recommendation = result['choices'][0]['message']['content'].strip()
+            return fashion_recommendation
+        else:
+            return f"Error: {response.status_code}, {response.text}"
+
+
+
