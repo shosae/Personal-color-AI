@@ -28,7 +28,7 @@ function App() {
 
     // 임시로 데이터 저장 및 페이지 이동
     localStorage.setItem('personalColor', '쿨톤 여름');
-    localStorage.setItem('fashionItems', JSON.stringify(['파스텔 블루 셔츠', '화이트 팬츠', '실버 액세서리']));
+    // localStorage.setItem('fashionItems', JSON.stringify([AAAAA])); //패션 아이템 저장, 퍼스널 컬러에 맞는 색상 넘겨주기
     localStorage.setItem('previewURL', previewURL); // 미리보기 URL을 로컬 저장소에 저장
 
     window.location.href = '/resultpage.html';

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>퍼컬 AI - 결과 페이지</title>
-  <link rel="stylesheet" href="App.css">
+  <link rel="stylesheet" href="resultpage.css">
 </head>
 <body>
   <div class="app-container">
@@ -14,6 +14,7 @@
       <h2>퍼스널 컬러 결과</h2>
       <p id="personalColor" class="personal-color"></p>
 
+      <!-- 퍼스널 컬러에 맞는 색상 받아와서 무신사 페이지 출력-->
       <div class="fashion-items-container" style="display: flex; gap: 20px;">
         <div class="fashion-item" style="flex: 1;">
           <h3>상의 추천</h3>
@@ -37,27 +38,14 @@
   </div>
 
   <script>
-    // 로컬 저장소에서 Base64 인코딩된 이미지를 불러와 화면에 표시
     const previewURL = localStorage.getItem('previewURL');
     if (previewURL) {
       document.getElementById('uploadedImage').src = previewURL;
-    } else {
-      console.error('Preview URL not found in localStorage');
     }
 
     document.getElementById('personalColor').textContent = localStorage.getItem('personalColor');
 
-    const fashionItems = JSON.parse(localStorage.getItem('fashionItems'));
-    const fashionItemsContainer = document.createElement('ul');
-    fashionItems.forEach(item => {
-      const listItem = document.createElement('li');
-      listItem.textContent = item;
-      fashionItemsContainer.appendChild(listItem);
-    });
-    document.body.appendChild(fashionItemsContainer);
-
     function goBack() {
-      // 뒤로 가기 버튼 클릭 시 메인 페이지로 이동
       window.location.href = '/';
     }
   </script>
