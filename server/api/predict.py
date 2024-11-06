@@ -1,5 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
+from rembg import remove
 from PIL import Image
 import io
 
@@ -15,6 +16,10 @@ async def upload_image(file: UploadFile = File(...)):
         # 이미지 파일을 메모리로 읽기
         image_bytes = await file.read()
         image = Image.open(io.BytesIO(image_bytes))
+        image = remove(image)
+        
+        
+        
 
         # 이미지 처리 로직 (예: 분석 등)
         width, height = image.size
