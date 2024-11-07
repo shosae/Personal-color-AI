@@ -3,14 +3,15 @@ import axios from 'axios';
 import './App.css';
 
 function App() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewURL, setPreviewURL] = useState(null);
+  const [selectedFile, setSelectedFile] = useState(null); // 업로드된 파일 저장
+  const [previewURL, setPreviewURL] = useState(null); // 파일 미리보기 URL 저장
 
-  const handleFileChange = (event) => { //파일 변경 핸들러
+  // 파일이 선택되었을 때 호출되는 함수
+  const handleFileChange = (event) => { 
     const file = event.target.files[0];
     setSelectedFile(file);
   
-    // 파일을 Base64로 인코딩하여 저장(미리보기)
+    // 파일을 Base64로 인코딩하여 미리보기 URL로 사용
     const reader = new FileReader();
     reader.onloadend = () => {
       const base64String = reader.result;
@@ -20,7 +21,8 @@ function App() {
     reader.readAsDataURL(file);
   };
 
-  const handleUpload = async () => { //파일 업로드 핸들러
+  // 파일을 백엔드로 업로드하고 결과를 받는 함수
+  const handleUpload = async () => {
     if (!selectedFile) {
       alert('파일을 선택해주세요.');
       return;
