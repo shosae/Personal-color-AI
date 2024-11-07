@@ -8,8 +8,26 @@ import os
 from core.env import env
 import requests
 import json
+from sklearn.cluster import DBSCAN
+from collections import Counter
 
 class PredictService:
+    @staticmethod
+    def dbscan_dominant_color(rgb_values, eps=10, min_samples=5):
+        # RGB 값을 float 타입으로 변환
+        rgb_values = rgb_values.astype(float)
+        
+        db = DBSCAN(eps=eps, min_samples=min_samples).fit(rgb_values)
+        labels = db.labels_
+        
+        # 노이즈를 제외한 레이블 중에서 가장 큰 클러스터 찾기
+        label_counts = Counter(label for label in labels if label != -1)
+        if not label_counts:
+            return np.mean(rgb_values, axis=0)  # 모든 포인트가 노이즈일 경우
+        
+        dominant_cluster = max(label_counts, key=label_counts.get)
+        return np.mean(rgb_values[labels == dominant_cluster], axis=0)
+
     def get_rgb(self, model, image_processor, image):
 
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -42,15 +60,20 @@ class PredictService:
         def safe_mean(arr):
             return np.mean(arr, axis=0) if arr.size > 0 else np.array([0, 0, 0])
 
-        skin_avg_rgb = safe_mean(skin_rgb)
-        hair_avg_rgb = safe_mean(hair_rgb)
-        eye_avg_rgb = safe_mean(eye_rgb)
+        # skin_avg_rgb = safe_mean(skin_rgb)
+        # hair_avg_rgb = safe_mean(hair_rgb)
+        # eye_avg_rgb = safe_mean(eye_rgb)
+
+        skin_avg_rgb = self.dbscan_dominant_color(skin_rgb) if skin_rgb.size > 0 else np.array([0, 0, 0])
+        hair_avg_rgb = self.dbscan_dominant_color(hair_rgb) if hair_rgb.size > 0 else np.array([0, 0, 0])
+        eye_avg_rgb = self.dbscan_dominant_color(eye_rgb) if eye_rgb.size > 0 else np.array([0, 0, 0])
 
         return { 
             "skin": skin_avg_rgb, 
             "hair": hair_avg_rgb, 
             "eye": eye_avg_rgb 
             }
+
     def predict_personal_color(self, response):
         API_URL = "https://api.x.ai/v1/chat/completions"
         API_KEY = env.get("API_KEY")
