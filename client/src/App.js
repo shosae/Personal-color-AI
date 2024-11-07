@@ -5,12 +5,13 @@ import './App.css';
 function App() {
   const [selectedFile, setSelectedFile] = useState(null); // 업로드된 파일 저장
   const [previewURL, setPreviewURL] = useState(null); // 파일 미리보기 URL 저장
+  const [gender, setGender] = useState(''); // 선택한 성별 저장
 
   // 파일이 선택되었을 때 호출되는 함수
   const handleFileChange = (event) => { 
     const file = event.target.files[0];
     setSelectedFile(file);
-  
+
     // 파일을 Base64로 인코딩하여 미리보기 URL로 사용
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -21,10 +22,19 @@ function App() {
     reader.readAsDataURL(file);
   };
 
-  // 파일을 백엔드로 업로드하고 결과를 받는 함수
+  // 성별이 선택되었을 때 호출되는 함수
+  const handleGenderChange = (event) => {
+    setGender(event.target.value);
+  };
+
+  // 파일과 성별 정보를 백엔드로 업로드하고 결과를 받는 함수
   const handleUpload = async () => {
     if (!selectedFile) {
       alert('파일을 선택해주세요.');
+      return;
+    }
+    if (!gender) {
+      alert('성별을 선택해주세요.');
       return;
     }
 
@@ -32,6 +42,7 @@ function App() {
     /*
     const formData = new FormData();
     formData.append('image', selectedFile);
+    formData.append('gender', gender); // 성별 정보를 formData에 추가
 
     try {
       const response = await axios.post('http://localhost:8000/api/predict', formData, {
@@ -62,6 +73,29 @@ function App() {
       <div className="upload-page">
         <h2>사진을 업로드하고 분석하세요</h2>
         <input type="file" accept="image/*" onChange={handleFileChange} className="file-input" />
+
+        {/* 성별 선택 라디오 버튼 */}
+        <div className="gender-selection">
+          <label>
+            <input
+              type="radio"
+              value="male"
+              checked={gender === 'male'}
+              onChange={handleGenderChange}
+            />
+            남자
+          </label>
+          <label>
+            <input
+              type="radio"
+              value="female"
+              checked={gender === 'female'}
+              onChange={handleGenderChange}
+            />
+            여자
+          </label>
+        </div>
+
         <button onClick={handleUpload} className="upload-button">사진 업로드 및 분석</button>
       </div>
     </div>
