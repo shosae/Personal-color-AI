@@ -1,5 +1,4 @@
 // src/components/ResultPage.js
-// src/components/ResultPage.js
 import React, { useEffect, useState } from 'react';
 import {
   Container,
@@ -13,10 +12,15 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // 설치된 패키지에서 아이콘 불러오기
-
+import autumnWarm from '../assets/autumn-warm.png';
+import winterCool from '../assets/winter-cool.png';
+import springWarm from '../assets/spring-warm.png';
+import summerCool from '../assets/summer-cool.png';
 function ResultPage() {
   const [personalColor, setPersonalColor] = useState('');
   const [uploadedImage, setUploadedImage] = useState('');
+  const [colorImage, setColorImage] = useState('');
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,6 +28,24 @@ function ResultPage() {
     const color = localStorage.getItem('personalColor');
     setUploadedImage(previewURL);
     setPersonalColor(color);
+     // 퍼스널 컬러에 따라서 색상표 이미지 설정
+     switch (color) {
+      case 'Autumn Warm':
+        setColorImage(autumnWarm);
+        break;
+      case 'Winter Cool':
+        setColorImage(winterCool);
+        break;
+      case 'Spring Warm':
+        setColorImage(springWarm);
+        break;
+      case 'Summer Cool':
+        setColorImage(summerCool);
+        break;
+      default:
+        setColorImage('');
+        break;
+      }
   }, []);
 
   // 무신사 추천 URL 설정
@@ -46,7 +68,7 @@ function ResultPage() {
   return (
     <Container maxWidth="md" sx={{ mt: 8 }}>
       <Typography variant="h3" align="center" gutterBottom>
-        추천 결과
+        분석 결과
       </Typography>
       <Card sx={{ padding: 4, backgroundColor: 'background.paper', boxShadow: 3 }}>
         <Grid container spacing={4} justifyContent="center">
@@ -73,6 +95,16 @@ function ResultPage() {
             <Typography variant="h4" color="primary.main">
               {personalColor}
             </Typography>
+             {colorImage && (
+        <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
+          <CardMedia
+            component="img"
+            image={colorImage}
+            alt={`${personalColor} 색상표`}
+            sx={{ width: '100%', height: 'auto', objectFit: 'contain' }}
+          />
+        </Card>
+      )}
           </Grid>
         </Grid>
 
