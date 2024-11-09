@@ -13,7 +13,6 @@ import {
   FormLabel,
   Box,
   Card,
-  Grid,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload'; // 설치된 패키지에서 아이콘 불러오기
 function UploadPage() {
@@ -75,7 +74,7 @@ function UploadPage() {
     */
 
     // 임시 퍼스널컬러 설정
-    localStorage.setItem('personalColor', 'Winter Cool');
+    localStorage.setItem('personalColor', 'Summer Cool');
 
     // 결과 페이지로 이동
     navigate('/result');

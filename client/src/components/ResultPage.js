@@ -7,7 +7,6 @@ import {
   Grid,
   Card,
   CardMedia,
-  CardContent,
   Box,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
