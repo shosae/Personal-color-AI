@@ -12,5 +12,5 @@ async def root():
     return {"message": "Welcome to the FastAPI server!"}
 
 # 서버 실행
-# uvicorn main:app --reload
+# uvicorn main:app --reload 
 

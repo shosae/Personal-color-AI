@@ -9,6 +9,7 @@ from core.env import env
 import requests
 import json
 import re
+
 #무신사 URL 생성 함수(아이템과 생상이름을 조합하여 URL 생성)
 def generate_musinsa_url(item, color_name):
     base_url = "https://www.musinsa.com/search/goods"
@@ -17,7 +18,13 @@ def generate_musinsa_url(item, color_name):
 # AI 응답 파싱 함수
 def parse_ai_response(response_text):
     response_text = response_text.replace("*", "")
-
+    # 설명 부분만 추출하기
+    
+    explanation_pattern = r"설명\s*:\s*(.+)"
+    explanation_match = re.search(explanation_pattern, response_text)
+    explanation = explanation_match.group(1) if explanation_match else "설명이 포함되어 있지 않습니다."
+    
+    
     # 퍼스널 컬러 추출
     if "봄" in response_text:
         personal_color = "봄 웜톤"
@@ -53,7 +60,7 @@ def parse_ai_response(response_text):
     if not any(recommendations.values()) or personal_color == "알 수 없음":
         return None
 
-    return personal_color, recommendations
+    return personal_color, recommendations, explanation
 
 # 색상과 아이템을 분리하는 함수
 def extract_color_and_item(item_with_color):
@@ -108,7 +115,7 @@ class PredictService:
             "eye": eye_avg_rgb 
             }
         
-    def predict_personal_color(self, response):
+    def predict_personal_color(self, response, gender = None):
         API_URL = "https://api.x.ai/v1/chat/completions"
         API_KEY = env.get("API_KEY")
 
@@ -122,21 +129,26 @@ class PredictService:
     - 눈 색상: {eye_rgb}
     - 머리카락 색상: {hair_rgb}
 
+    사용자 정보:
+     - 이 사람의 성별은 {gender}.
+     
     이 정보를 바탕으로 해당 사람의 퍼스널 컬러 계절(봄 웜톤, 여름 쿨톤, 가을 웜톤, 겨울 쿨톤)을 결정하고, 이에 맞는 상의, 하의, 악세서리 아이템(색상 포함)을 추천해 주세요.
     추천은 아래 예시에 맞춰 작성해 주세요.
 
-    당신은 퍼스널 컬러와 패션 추천 전문가입니다. 사용자의 퍼스널 컬러에 어울리는 상의, 하의, 액세서리의 색상과 구체적인 패션 아이템을 추천해 주세요. 각 항목에 대해, **"상의", "하의", "악세서리"** 카테고리별로 색상과 아이템을 다음 형식으로 정리해 주세요.
+    당신은 퍼스널 컬러와 패션 추천 전문가입니다. 사용자의 퍼스널 컬러에 어울리는 상의, 하의, 액세서리의 색상과 구체적인 패션 아이템을 추천해 주세요. 
+    패션 아이템을 추천할때 *성별*을 참고하여 추천하시오*
+    각 항목에 대해, **"상의", "하의", "악세서리"** 카테고리별로 색상과 아이템을 다음 형식으로 정리해 주세요.
     **색상은 대중적인 색상**
 **예시 출력 형식**:
 - 퍼스널 컬러: 가을 웜톤
-- 상의: 머스타드 옐로우 니트 스웨터, 버건디 블라우스
-- 하의: 카키 컬러 스트레이트 진, 딥 와인 레드 플레어 스커트
-- 악세서리: 골드 체인 목걸이, 브론즈 색조 아이섀도, 딥 그린 핸드백
+- 상의:  옐로우 니트 스웨터, 버건디 블라우스
+- 하의: 카키 컬러 스트레이트 진, 레드 플레어 스커트
+- 악세서리: 골드 체인 목걸이, 브론즈 색조 아이섀도, 그린 핸드백
 - 설명: 색상을 고른 이유 설명
 
 **실제 예시**:
 - 퍼스널 컬러: 봄 웜톤
-- 상의: 파스텔 핑크 셔츠, 라이트 블루 카디건
+- 상의: 파스텔 핑크 셔츠,  블루 카디건
 - 하의: 아이보리 슬랙스, 화이트 스커트
 - 악세서리: 로즈 골드 귀걸이, 실버 체인 목걸이
 
@@ -161,12 +173,12 @@ class PredictService:
             }
         
         response = requests.post(API_URL, headers=headers, data=json.dumps(data))
-        
+    
         if response.status_code == 200:
             result = response.json()
             response_text = result['choices'][0]['message']['content'].strip()
 
-            # AI 응답에서 퍼스널 컬러, 각 카테고리별 패션 추천 및 URL 추출
+            # AI 응답에서 퍼스널 컬러, 각 카테고리별 패션 추천 및 설명 추출
             parse_result = parse_ai_response(response_text)
             
             # 포맷 확인 및 재요청 로직
@@ -175,16 +187,13 @@ class PredictService:
                 print("AI 응답이 일관된 포맷을 따르지 않았습니다. 재요청을 고려하세요.")
                 return {"error": "일관된 포맷이 아닙니다. AI의 응답을 다시 확인하십시오."}
             
-            personal_color, fashion_recommendations = parse_result
+            personal_color, fashion_recommendations, explanation = parse_result
 
             # JSON 응답 생성
             return {
                 "personal_color": personal_color,
                 "fashion_recommendations": fashion_recommendations,
-                "response_text": response_text
+                "response_text": explanation
             }
         else:
             return {"error": f"오류: {response.status_code}, {response.text}"}
-
-
-

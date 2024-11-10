@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form
 from fastapi.responses import JSONResponse
 from rembg import remove
 from PIL import Image
@@ -28,7 +28,9 @@ model = SegformerForSemanticSegmentation.from_pretrained("jonathandinu/face-pars
 model.to(device)
 
 @router.post("/")
-async def upload_image(file: UploadFile = File(...)):
+async def upload_image(file: UploadFile = File(...), gender: str = Form(...) ):
+    
+    
     # 업로드된 파일이 이미지인지 확인
     if file.content_type not in ["image/jpeg", "image/png"]:
         raise HTTPException(status_code=400, detail="Only JPEG or PNG images are allowed.")
@@ -63,7 +65,7 @@ async def upload_image(file: UploadFile = File(...)):
         '''
 
         # gpt에게 퍼스널 컬러 분석 요청
-        gptresult = predictService.predict_personal_color(rgb_response)
+        gptresult = predictService.predict_personal_color(rgb_response, gender = gender)
 
         # 사진에서 배경을 제거
         no_background = remove(image)
