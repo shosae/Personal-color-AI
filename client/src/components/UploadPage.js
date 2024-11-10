@@ -1,4 +1,3 @@
-// src/components/UploadPage.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -13,26 +12,27 @@ import {
   FormLabel,
   Box,
   Card,
+  CircularProgress,
 } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload'; // 설치된 패키지에서 아이콘 불러오기
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+
 function UploadPage() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewURL, setPreviewURL] = useState(null);
   const [gender, setGender] = useState('');
+  const [loading, setLoading] = useState(false); // 로딩 상태 관리
   const navigate = useNavigate();
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setSelectedFile(file);
-
-    // 파일을 Base64로 인코딩하여 미리보기 URL로 사용
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result;
-      setPreviewURL(base64String);
-      localStorage.setItem('previewURL', base64String);
-    };
     if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result;
+        setPreviewURL(base64String);
+        localStorage.setItem('previewURL', base64String);
+      };
       reader.readAsDataURL(file);
     }
   };
@@ -51,33 +51,29 @@ function UploadPage() {
       return;
     }
 
-    // 백엔드 연결 (주석 해제 후 사용)
-    /*
+    setLoading(true); // 로딩 시작
+
     const formData = new FormData();
     formData.append('image', selectedFile);
     formData.append('gender', gender);
 
     try {
-      const response = await axios.post('http://백엔드_URL/api/predict', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      // 백엔드로 이미지와 성별 데이터를 전송
+      const response = await axios.post('http://백엔드_서버_URL/api/predict', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const { personal_color } = response.data;
-      localStorage.setItem('personalColor', personal_color);
 
-      navigate('/result');
+      const { personal_color, styling_recommendation } = response.data;
+      localStorage.setItem('personalColor', personal_color);
+      localStorage.setItem('stylingRecommendation', styling_recommendation);
+
+      setLoading(false); // 로딩 종료
+      navigate('/result'); // 결과 페이지로 이동
     } catch (error) {
       console.error('에러 발생:', error);
       alert('분석 요청 중 오류가 발생했습니다.');
+      setLoading(false); // 로딩 종료
     }
-    */
-
-    // 임시 퍼스널컬러 설정
-    localStorage.setItem('personalColor', 'Summer Cool');
-
-    // 결과 페이지로 이동
-    navigate('/result');
   };
 
   return (
@@ -132,38 +128,38 @@ function UploadPage() {
           <FormControl component="fieldset">
             <FormLabel component="legend">성별 선택</FormLabel>
             <RadioGroup row value={gender} onChange={handleGenderChange}>
-              <FormControlLabel
-                value="male"
-                control={<Radio />}
-                label="남자"
-                aria-label="남성"
-              />
-              <FormControlLabel
-                value="female"
-                control={<Radio />}
-                label="여자"
-                aria-label="여성"
-              />
+              <FormControlLabel value="male" control={<Radio />} label="남자" />
+              <FormControlLabel value="female" control={<Radio />} label="여자" />
             </RadioGroup>
           </FormControl>
 
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleUpload}
-            sx={{
-              mt: 2,
-              paddingY: 1.5,
-              fontSize: '1rem',
-              transition: 'background-color 0.3s, transform 0.2s',
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-            사진 업로드 및 분석
-          </Button>
+          {/* 로딩 중일 때는 로딩 스피너 표시 */}
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+              <CircularProgress />
+              <Typography variant="h6" sx={{ ml: 2 }}>
+                분석 중입니다. 잠시만 기다려주세요...
+              </Typography>
+            </Box>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleUpload}
+              sx={{
+                mt: 2,
+                paddingY: 1.5,
+                fontSize: '1rem',
+                transition: 'background-color 0.3s, transform 0.2s',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                  transform: 'scale(1.05)',
+                },
+              }}
+            >
+              사진 업로드 및 분석
+            </Button>
+          )}
         </Box>
       </Card>
     </Container>
