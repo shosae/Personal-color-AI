@@ -73,7 +73,7 @@ function UploadPage() {
 
     try {
       // 백엔드로 이미지와 성별 데이터를 전송, URL 다를 시 변경 필요!
-      const response = await axios.post('http://127.0.0.1:8000/api/predict/', formData, { 
+      const response = await axios.post('/api/predict/', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 

@@ -98,6 +98,8 @@ class PredictService:
         
     def get_rgb(self, model, image_processor, image):
         try:
+            if image.mode != "RGB":
+                image = image.convert("RGB")
             device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
             inputs = image_processor(images=image, return_tensors="pt").to(device)
             outputs = model(**inputs)
