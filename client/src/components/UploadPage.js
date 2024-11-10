@@ -68,19 +68,28 @@ function UploadPage() {
     setLoading(true); // 로딩 시작
 
     const formData = new FormData();
-    formData.append('image', selectedFile);
+    formData.append('file', selectedFile);
     formData.append('gender', gender);
 
     try {
       // 백엔드로 이미지와 성별 데이터를 전송, URL 다를 시 변경 필요!
-      const response = await axios.post('http://127.0.0.1:8000/api/predict', formData, { 
+      const response = await axios.post('http://127.0.0.1:8000/api/predict/', formData, { 
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const { personal_color, styling_recommendation, preview_url } = response.data;
-      
+      const { fashion_items, no_background } = response.data;
+      const { response_text,personal_color } = fashion_items; // response_text 추출
+
       // navigate를 통해 상태 전달
-      navigate('/result', { state: { personalColor: personal_color, stylingRecommendation: styling_recommendation, previewURL: preview_url } });
+      navigate('/result', {
+        state: {
+          personalColorData: personal_color,
+          fashionItems: fashion_items,
+          noBackground: no_background,
+          responseText: response_text, // 전달
+        },
+      });
+
 
       setLoading(false); // 로딩 종료
     } catch (error) { // 에러 발생 시
