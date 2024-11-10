@@ -1,4 +1,4 @@
-// src/components/UploadPage.js
+// UploadPage.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -13,28 +13,39 @@ import {
   FormLabel,
   Box,
   Card,
-  Grid,
+  CircularProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload'; // 설치된 패키지에서 아이콘 불러오기
+import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+
 function UploadPage() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewURL, setPreviewURL] = useState(null);
-  const [gender, setGender] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null); // 사진 선택
+  const [previewURL, setPreviewURL] = useState(null); // 미리보기 URL
+  const [gender, setGender] = useState(''); // 성별 선택
+  const [loading, setLoading] = useState(false); // 로딩 상태 관리
+  const [error, setError] = useState(''); // 에러 메시지 상태
+  const [openSnackbar, setOpenSnackbar] = useState(false); // Snackbar 상태
   const navigate = useNavigate();
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setSelectedFile(file);
-
-    // 파일을 Base64로 인코딩하여 미리보기 URL로 사용
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result;
-      setPreviewURL(base64String);
-      localStorage.setItem('previewURL', base64String);
-    };
     if (file) {
-      reader.readAsDataURL(file);
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif']; // 파일 타입 검증
+      if (!validTypes.includes(file.type)) {
+        setError('지원되지 않는 파일 형식입니다. JPEG, PNG, GIF 파일만 업로드할 수 있습니다.');
+        setOpenSnackbar(true);
+        return;
+      }
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) { // 파일 크기 검증
+        setError('파일 크기가 너무 큽니다. 5MB 이하의 파일을 업로드해주세요.');
+        setOpenSnackbar(true);
+        return;
+      }
+      setSelectedFile(file);
+      const objectURL = URL.createObjectURL(file);
+      setPreviewURL(objectURL);
     }
   };
 
@@ -44,47 +55,53 @@ function UploadPage() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      alert('파일을 선택해주세요.');
+      setError('사진을 선택해주세요.');
+      setOpenSnackbar(true);
       return;
     }
     if (!gender) {
-      alert('성별을 선택해주세요.');
+      setError('성별을 선택해주세요.');
+      setOpenSnackbar(true);
       return;
     }
 
-    // 백엔드 연결 (주석 해제 후 사용)
-    /*
+    setLoading(true); // 로딩 시작
+
     const formData = new FormData();
     formData.append('image', selectedFile);
     formData.append('gender', gender);
 
     try {
-      const response = await axios.post('http://백엔드_URL/api/predict', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      // 백엔드로 이미지와 성별 데이터를 전송, URL 다를 시 변경 필요!
+      const response = await axios.post('http://127.0.0.1:8000/api/predict', formData, { 
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-      const { personal_color } = response.data;
-      localStorage.setItem('personalColor', personal_color);
 
-      navigate('/result');
-    } catch (error) {
+      const { personal_color, styling_recommendation, preview_url } = response.data;
+      
+      // navigate를 통해 상태 전달
+      navigate('/result', { state: { personalColor: personal_color, stylingRecommendation: styling_recommendation, previewURL: preview_url } });
+
+      setLoading(false); // 로딩 종료
+    } catch (error) { // 에러 발생 시
       console.error('에러 발생:', error);
-      alert('분석 요청 중 오류가 발생했습니다.');
+      setError('분석 요청 중 오류가 발생했습니다.');
+      setOpenSnackbar(true);
+      setLoading(false); // 로딩 종료
     }
-    */
+  };
 
-    // 임시 퍼스널컬러 설정
-    localStorage.setItem('personalColor', 'Winter Cool');
-
-    // 결과 페이지로 이동
-    navigate('/result');
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
   };
 
   return (
     <Container maxWidth="sm" sx={{ mt: 8 }}>
       <Typography variant="h3" align="center" gutterBottom>
-        퍼컬 AI
+        Personal Color AI
       </Typography>
       <Card sx={{ padding: 4, backgroundColor: 'background.paper' }}>
         <Typography variant="h5" gutterBottom>
@@ -133,40 +150,47 @@ function UploadPage() {
           <FormControl component="fieldset">
             <FormLabel component="legend">성별 선택</FormLabel>
             <RadioGroup row value={gender} onChange={handleGenderChange}>
-              <FormControlLabel
-                value="male"
-                control={<Radio />}
-                label="남자"
-                aria-label="남성"
-              />
-              <FormControlLabel
-                value="female"
-                control={<Radio />}
-                label="여자"
-                aria-label="여성"
-              />
+              <FormControlLabel value="male" control={<Radio />} label="남자" />
+              <FormControlLabel value="female" control={<Radio />} label="여자" />
             </RadioGroup>
           </FormControl>
 
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={handleUpload}
-            sx={{
-              mt: 2,
-              paddingY: 1.5,
-              fontSize: '1rem',
-              transition: 'background-color 0.3s, transform 0.2s',
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-            사진 업로드 및 분석
-          </Button>
+          {/* 응답 대기 */}
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+              <CircularProgress />
+              <Typography variant="h6" sx={{ ml: 2 }}>
+                분석 중입니다. 잠시만 기다려주세요...
+              </Typography>
+            </Box>
+          ) : (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleUpload}
+              sx={{
+                mt: 2,
+                paddingY: 1.5,
+                fontSize: '1rem',
+                transition: 'background-color 0.3s, transform 0.2s',
+                '&:hover': {
+                  backgroundColor: 'primary.dark',
+                  transform: 'scale(1.05)',
+                },
+              }}
+            >
+              사진 업로드 및 분석
+            </Button>
+          )}
         </Box>
       </Card>
+
+      {/* Snackbar for error messages */}
+      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }

@@ -1,6 +1,5 @@
-// src/components/ResultPage.js
-// src/components/ResultPage.js
-import React, { useEffect, useState } from 'react';
+// ResultPage.js
+import React from 'react';
 import {
   Container,
   Typography,
@@ -8,45 +7,65 @@ import {
   Grid,
   Card,
   CardMedia,
-  CardContent,
   Box,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack'; // 설치된 패키지에서 아이콘 불러오기
+import { useNavigate, useLocation } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import autumnWarm from '../assets/autumn-warm.png';
+import winterCool from '../assets/winter-cool.png';
+import springWarm from '../assets/spring-warm.png';
+import summerCool from '../assets/summer-cool.png';
 
 function ResultPage() {
-  const [personalColor, setPersonalColor] = useState('');
-  const [uploadedImage, setUploadedImage] = useState('');
   const navigate = useNavigate();
+  const location = useLocation();
+  const { personalColor, stylingRecommendation, previewURL } = location.state || {};
 
-  useEffect(() => {
-    const previewURL = localStorage.getItem('previewURL');
-    const color = localStorage.getItem('personalColor');
-    setUploadedImage(previewURL);
-    setPersonalColor(color);
-  }, []);
-
-  // 무신사 추천 URL 설정
-  const colorCodes = {
-    'Spring Warm': '5%2C9%2C12%2C23%2C29%2C31%2C32%2C44%2C45%2C56%2C77',
-    'Summer Cool': '3%2C7%2C24%2C32%2C37%2C39%2C45%2C48%2C57%2C58',
-    'Autumn Warm': '4%2C12%2C26%2C28%2C30%2C34%2C35%2C49%2C78%2C83%2C84',
-    'Winter Cool': '1%2C2%2C11%2C13%2C25%2C36%2C49%2C51%2C59%2C60%2C73%2C80%2C81',
+  // 퍼스널 컬러에 따라 텍스트 색상을 동적으로 변경하는 함수
+  const getColorForPersonalColor = (color) => {
+    switch (color) {
+      case 'Spring Warm':
+        return '#FFB74D';
+      case 'Summer Cool':
+        return '#64B5F6';
+      case 'Autumn Warm':
+        return '#A1887F';
+      case 'Winter Cool':
+        return '#7986CB';
+      default:
+        return '#333333';
+    }
   };
 
-  const colorFilter = colorCodes[personalColor] || '1'; // 기본 색상 설정
+  // 백엔드로부터 받은 데이터가 없을 경우 업로드 페이지로 리다이렉트
+  React.useEffect(() => {
+    if (!personalColor || !stylingRecommendation || !previewURL) {
+      navigate('/'); // 업로드 페이지로 이동
+    }
+  }, [personalColor, stylingRecommendation, previewURL, navigate]);
 
-  const topRecommendationURL = `https://www.musinsa.com/category/001?gf=A&color=${colorFilter}`;
-  const bottomRecommendationURL = `https://www.musinsa.com/category/003?gf=A&color=${colorFilter}`;
-
-  const handleBack = () => {
+  const handleBack = () => { // 뒤로가기
     navigate('/');
   };
+
+  if (!personalColor || !stylingRecommendation || !previewURL) {
+    return null; // 데이터가 없을 경우 렌더링하지 않음
+  }
+
+  // 퍼스널 컬러에 따른 색상표 이미지 설정
+  const colorImageMap = {
+    'Autumn Warm': autumnWarm,
+    'Winter Cool': winterCool,
+    'Spring Warm': springWarm,
+    'Summer Cool': summerCool,
+  };
+
+  const colorImage = colorImageMap[personalColor] || '';
 
   return (
     <Container maxWidth="md" sx={{ mt: 8 }}>
       <Typography variant="h3" align="center" gutterBottom>
-        추천 결과
+        분석 결과
       </Typography>
       <Card sx={{ padding: 4, backgroundColor: 'background.paper', boxShadow: 3 }}>
         <Grid container spacing={4} justifyContent="center">
@@ -54,11 +73,11 @@ function ResultPage() {
             <Typography variant="h5" gutterBottom>
               업로드된 사진
             </Typography>
-            {uploadedImage ? (
+            {previewURL ? (
               <CardMedia
                 component="img"
                 height="300"
-                image={uploadedImage}
+                image={previewURL}
                 alt="Uploaded"
                 sx={{ borderRadius: 2, boxShadow: 2 }}
               />
@@ -70,78 +89,64 @@ function ResultPage() {
             <Typography variant="h5" gutterBottom>
               당신의 퍼스널 컬러는
             </Typography>
-            <Typography variant="h4" color="primary.main">
+            <Typography
+              variant="h4"
+              sx={{
+                color: getColorForPersonalColor(personalColor),
+                fontWeight: 'bold',
+              }}
+            >
               {personalColor}
             </Typography>
+            {colorImage && (
+              <Card sx={{ boxShadow: 3, borderRadius: 2 }}>
+                <CardMedia
+                  component="img"
+                  image={colorImage}
+                  alt={`${personalColor} 색상표`}
+                  sx={{ width: '100%', height: 'auto', objectFit: 'contain' }}
+                />
+              </Card>
+            )}
           </Grid>
         </Grid>
 
         <Typography variant="h5" align="center" sx={{ mt: 4 }}>
-          퍼스널 컬러에 맞는 패션 아이템 추천
+          스타일링 추천
         </Typography>
-        <Grid container spacing={4} sx={{ mt: 2 }}>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%', padding: 2, boxShadow: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                상의 추천
+        {stylingRecommendation && stylingRecommendation.length > 0 && (
+          <Box sx={{ mt: 4, mb: 4 }}>
+            {stylingRecommendation.map((recommendation, index) => (
+              <Typography key={index} variant="h6" align="center" sx={{ mt: 2 }}>
+                {recommendation}
               </Typography>
-              <Box
-                component="iframe"
-                title="Top Recommendation"
-                src={topRecommendationURL}
-                sx={{
-                  width: '100%',
-                  height: '1000px',
-                  border: 'none',
-                  borderRadius: 2,
-                  mt: 2,
-                }}
-                loading="lazy"
-              ></Box>
-            </Card>
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <Card sx={{ height: '100%', padding: 2, boxShadow: 2 }}>
-              <Typography variant="h6" gutterBottom>
-                하의 추천
-              </Typography>
-              <Box
-                component="iframe"
-                title="Bottom Recommendation"
-                src={bottomRecommendationURL}
-                sx={{
-                  width: '100%',
-                  height: '1000px',
-                  border: 'none',
-                  borderRadius: 2,
-                  mt: 2,
-                }}
-                loading="lazy"
-              ></Box>
-            </Card>
-          </Grid>
-        </Grid>
+            ))}
+          </Box>
+        )}
 
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
-          <Button
-            variant="contained"
-            color="secondary"
-            startIcon={<ArrowBackIcon />}
-            onClick={handleBack}
-            sx={{
-              paddingY: 1.5,
-              fontSize: '1rem',
-              transition: 'background-color 0.3s, transform 0.2s',
-              '&:hover': {
-                backgroundColor: 'secondary.dark',
-                transform: 'scale(1.05)',
-              },
-            }}
-          >
-            뒤로 가기
-          </Button>
-        </Box>
+        {/* 스타일링 추천을 텍스트로 표시 */}
+        {/* 만약 링크나 이미지라면 적절히 표시하도록 수정 */}
       </Card>
+
+      <Box sx={{ textAlign: 'center', mt: 4 }}>
+        <Button
+          variant="contained"
+          color="secondary"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{
+            paddingY: 1.5,
+            fontSize: '1rem',
+            transition: 'background-color 0.3s, transform 0.2s',
+            '&:hover': {
+              backgroundColor: 'secondary.dark',
+              transform: 'scale(1.05)',
+            },
+          }}
+        >
+          뒤로 가기
+        </Button>
+      </Box>
     </Container>
   );
 }
