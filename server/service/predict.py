@@ -11,24 +11,10 @@ import requests
 import json
 from sklearn.cluster import DBSCAN
 from collections import Counter
+import logging
 
-class PredictService:
-    @staticmethod
-    def dbscan_dominant_color(rgb_values, eps=10, min_samples=5):
-        # RGB 값을 float 타입으로 변환
-        rgb_values = rgb_values.astype(float)
-        
-        db = DBSCAN(eps=eps, min_samples=min_samples).fit(rgb_values)
-        labels = db.labels_
-        
-        # 노이즈를 제외한 레이블 중에서 가장 큰 클러스터 찾기
-        label_counts = Counter(label for label in labels if label != -1)
-        if not label_counts:
-            return np.mean(rgb_values, axis=0)  # 모든 포인트가 노이즈일 경우
-        
-        dominant_cluster = max(label_counts, key=label_counts.get)
-        return np.mean(rgb_values[labels == dominant_cluster], axis=0)
-
+logger = logging.getLogger(__name__)
+    
 #무신사 URL 생성 함수(아이템과 생상이름을 조합하여 URL 생성)
 def generate_musinsa_url(item, color_name):
     base_url = "https://www.musinsa.com/search/goods"
@@ -92,51 +78,67 @@ def extract_color_and_item(item_with_color):
 
 class PredictService:
     #def __init__(self):
+    @staticmethod
+    def dbscan_dominant_color(rgb_values, eps=10, min_samples=5):
+        # RGB 값을 float 타입으로 변환
+        rgb_values = rgb_values.astype(float)
+        
+        db = DBSCAN(eps=eps, min_samples=min_samples).fit(rgb_values)
+        labels = db.labels_
+        
+        # 노이즈를 제외한 레이블 중에서 가장 큰 클러스터 찾기
+        label_counts = Counter(label for label in labels if label != -1)
+        if not label_counts:
+            return np.mean(rgb_values, axis=0)  # 모든 포인트가 노이즈일 경우
+        
+        dominant_cluster = max(label_counts, key=label_counts.get)
+        return np.mean(rgb_values[labels == dominant_cluster], axis=0)
+        print(f"RGB Values Shape: {rgb_values.shape}")
+        print(f"RGB Values: {rgb_values}")
+        
     def get_rgb(self, model, image_processor, image):
+        try:
+            device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            inputs = image_processor(images=image, return_tensors="pt").to(device)
+            outputs = model(**inputs)
+            logits = outputs.logits 
 
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
-        inputs = image_processor(images=image, return_tensors="pt").to(device)
-        outputs = model(**inputs)
-        logits = outputs.logits 
-
-        upsampled_logits = nn.functional.interpolate(logits,
-                size=image.size[::-1], # H x W
+            upsampled_logits = nn.functional.interpolate(
+                logits,
+                size=image.size[::-1],
                 mode='bilinear',
-                align_corners=False)
+                align_corners=False
+            )
+            labels = upsampled_logits.argmax(dim=1)[0]
+            labels_viz = labels.cpu().numpy()
+            image_np = np.array(image)
 
-        labels = upsampled_logits.argmax(dim=1)[0]
+            skin_mask = labels_viz == 1
+            hair_mask = labels_viz == 13
+            eye_mask = np.logical_or.reduce((labels_viz == 3, labels_viz == 4, labels_viz == 5))
 
-        labels_viz = labels.cpu().numpy()
-        image_np = np.array(image)
+            skin_rgb = image_np[skin_mask]
+            hair_rgb = image_np[hair_mask]
+            eye_rgb = image_np[eye_mask]
 
-        # 마스크 생성
-        skin_mask = labels_viz == 1
-        hair_mask = labels_viz == 13
-        eye_mask = np.logical_or.reduce((labels_viz == 3, labels_viz == 4, labels_viz == 5))
+            logger.info("Skin RGB values shape: %s", skin_rgb.shape)
+            logger.info("Hair RGB values shape: %s", hair_rgb.shape)
+            logger.info("Eye RGB values shape: %s", eye_rgb.shape)
 
-        # RGB 값 추출
-        skin_rgb = image_np[skin_mask]
-        hair_rgb = image_np[hair_mask]
-        eye_rgb = image_np[eye_mask]
+            skin_avg_rgb = PredictService.dbscan_dominant_color(skin_rgb) if skin_rgb.size > 0 else np.array([0, 0, 0])
+            hair_avg_rgb = PredictService.dbscan_dominant_color(hair_rgb) if hair_rgb.size > 0 else np.array([0, 0, 0])
+            eye_avg_rgb = PredictService.dbscan_dominant_color(eye_rgb) if eye_rgb.size > 0 else np.array([0, 0, 0])
 
-        # 평균 RGB 값 계산 시 빈 배열 처리
-        def safe_mean(arr):
-            return np.mean(arr, axis=0) if arr.size > 0 else np.array([0, 0, 0])
+            logger.info("Final RGB Values - Skin: %s, Hair: %s, Eye: %s", skin_avg_rgb, hair_avg_rgb, eye_avg_rgb)
 
-        # skin_avg_rgb = safe_mean(skin_rgb)
-        # hair_avg_rgb = safe_mean(hair_rgb)
-        # eye_avg_rgb = safe_mean(eye_rgb)
-
-        skin_avg_rgb = self.dbscan_dominant_color(skin_rgb) if skin_rgb.size > 0 else np.array([0, 0, 0])
-        hair_avg_rgb = self.dbscan_dominant_color(hair_rgb) if hair_rgb.size > 0 else np.array([0, 0, 0])
-        eye_avg_rgb = self.dbscan_dominant_color(eye_rgb) if eye_rgb.size > 0 else np.array([0, 0, 0])
-
-        return { 
-            "skin": skin_avg_rgb, 
-            "hair": hair_avg_rgb, 
-            "eye": eye_avg_rgb 
+            return {
+                "skin": skin_avg_rgb,
+                "hair": hair_avg_rgb,
+                "eye": eye_avg_rgb
             }
+        except Exception as e:
+            logger.error("Error in get_rgb: %s", str(e))
+            raise
         
     def predict_personal_color(self, response, gender = None):
         API_URL = "https://api.x.ai/v1/chat/completions"
