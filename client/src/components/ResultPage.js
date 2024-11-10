@@ -19,14 +19,20 @@ function ResultPage() {
   const [personalColor, setPersonalColor] = useState('');
   const [uploadedImage, setUploadedImage] = useState('');
   const [colorImage, setColorImage] = useState('');
+  const [stylingRecommendation, setStylingRecommendation] = useState('');
+
 
   const navigate = useNavigate();
 
   useEffect(() => {
     const previewURL = localStorage.getItem('previewURL');
     const color = localStorage.getItem('personalColor');
+    const recommendation = localStorage.getItem('stylingRecommendation');
+
     setUploadedImage(previewURL);
     setPersonalColor(color);
+    setStylingRecommendation(recommendation);
+
      // 퍼스널 컬러에 따라서 색상표 이미지 설정
      switch (color) {
       case 'Autumn Warm':
@@ -106,10 +112,17 @@ function ResultPage() {
       )}
           </Grid>
         </Grid>
+          
+
 
         <Typography variant="h5" align="center" sx={{ mt: 4 }}>
           퍼스널 컬러에 맞는 패션 아이템 추천
         </Typography>
+        {stylingRecommendation && (
+          <Typography variant="h6" align="center" sx={{ mt: 4, mb: 4 }}>
+            {stylingRecommendation}
+          </Typography>
+        )}
         <Grid container spacing={4} sx={{ mt: 2 }}>
           <Grid item xs={12} md={6}>
             <Card sx={{ height: '100%', padding: 2, boxShadow: 2 }}>
