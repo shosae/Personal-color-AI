@@ -46,7 +46,7 @@ const theme = createTheme({
     MuiButton: {
       styleOverrides: {
         root: {
-          borderRadius: '8px',
+          borderRadius: '30px', // 모서리 둥글게
           padding: '10px 20px',
         },
       },
@@ -54,7 +54,8 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.1)',
+          borderRadius: '16px', // 모서리 둥글게
+          boxShadow: '0 6px 24px rgba(0, 0, 0, 0.15)', // 그림자
         },
       },
     },

@@ -1,3 +1,4 @@
+// UploadPage.js
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -13,27 +14,38 @@ import {
   Box,
   Card,
   CircularProgress,
+  Snackbar,
+  Alert,
 } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 
 function UploadPage() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [previewURL, setPreviewURL] = useState(null);
-  const [gender, setGender] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null); // 사진 선택
+  const [previewURL, setPreviewURL] = useState(null); // 미리보기 URL
+  const [gender, setGender] = useState(''); // 성별 선택
   const [loading, setLoading] = useState(false); // 로딩 상태 관리
+  const [error, setError] = useState(''); // 에러 메시지 상태
+  const [openSnackbar, setOpenSnackbar] = useState(false); // Snackbar 상태
   const navigate = useNavigate();
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      const validTypes = ['image/jpeg', 'image/png', 'image/gif']; // 파일 타입 검증
+      if (!validTypes.includes(file.type)) {
+        setError('지원되지 않는 파일 형식입니다. JPEG, PNG, GIF 파일만 업로드할 수 있습니다.');
+        setOpenSnackbar(true);
+        return;
+      }
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) { // 파일 크기 검증
+        setError('파일 크기가 너무 큽니다. 5MB 이하의 파일을 업로드해주세요.');
+        setOpenSnackbar(true);
+        return;
+      }
       setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result;
-        setPreviewURL(base64String);
-        localStorage.setItem('previewURL', base64String);
-      };
-      reader.readAsDataURL(file);
+      const objectURL = URL.createObjectURL(file);
+      setPreviewURL(objectURL);
     }
   };
 
@@ -43,11 +55,13 @@ function UploadPage() {
 
   const handleUpload = async () => {
     if (!selectedFile) {
-      alert('파일을 선택해주세요.');
+      setError('사진을 선택해주세요.');
+      setOpenSnackbar(true);
       return;
     }
     if (!gender) {
-      alert('성별을 선택해주세요.');
+      setError('성별을 선택해주세요.');
+      setOpenSnackbar(true);
       return;
     }
 
@@ -58,28 +72,36 @@ function UploadPage() {
     formData.append('gender', gender);
 
     try {
-      // 백엔드로 이미지와 성별 데이터를 전송
-      const response = await axios.post('http://백엔드_서버_URL/api/predict', formData, {
+      // 백엔드로 이미지와 성별 데이터를 전송, URL 다를 시 변경 필요!
+      const response = await axios.post('http://127.0.0.1:8000/api/predict', formData, { 
         headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const { personal_color, styling_recommendation } = response.data;
-      localStorage.setItem('personalColor', personal_color);
-      localStorage.setItem('stylingRecommendation', styling_recommendation);
+      const { personal_color, styling_recommendation, preview_url } = response.data;
+      
+      // navigate를 통해 상태 전달
+      navigate('/result', { state: { personalColor: personal_color, stylingRecommendation: styling_recommendation, previewURL: preview_url } });
 
       setLoading(false); // 로딩 종료
-      navigate('/result'); // 결과 페이지로 이동
-    } catch (error) {
+    } catch (error) { // 에러 발생 시
       console.error('에러 발생:', error);
-      alert('분석 요청 중 오류가 발생했습니다.');
+      setError('분석 요청 중 오류가 발생했습니다.');
+      setOpenSnackbar(true);
       setLoading(false); // 로딩 종료
     }
+  };
+
+  const handleCloseSnackbar = (event, reason) => {
+    if (reason === 'clickaway') {
+      return;
+    }
+    setOpenSnackbar(false);
   };
 
   return (
     <Container maxWidth="sm" sx={{ mt: 8 }}>
       <Typography variant="h3" align="center" gutterBottom>
-        퍼컬 AI
+        Personal Color AI
       </Typography>
       <Card sx={{ padding: 4, backgroundColor: 'background.paper' }}>
         <Typography variant="h5" gutterBottom>
@@ -133,7 +155,7 @@ function UploadPage() {
             </RadioGroup>
           </FormControl>
 
-          {/* 로딩 중일 때는 로딩 스피너 표시 */}
+          {/* 응답 대기 */}
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
               <CircularProgress />
@@ -162,6 +184,13 @@ function UploadPage() {
           )}
         </Box>
       </Card>
+
+      {/* Snackbar for error messages */}
+      <Snackbar open={openSnackbar} autoHideDuration={6000} onClose={handleCloseSnackbar}>
+        <Alert onClose={handleCloseSnackbar} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 }
