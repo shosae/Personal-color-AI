@@ -36,12 +36,17 @@ async def upload_image(file: UploadFile = File(...), gender: str = Form(...) ):
         raise HTTPException(status_code=400, detail="Only JPEG or PNG images are allowed.")
     
     try:
+        print("이미지 열기 시작")
         image_bytes = await file.read()
         image = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-
+        print("이미지 열기 완료")
+        
+        
         # 이미치 피부, 눈, 머리 부분 추출 및 RGB 값 추출
+        print("RGB 처리 시작")
         response = predictService.get_rgb(model, image_processor, image)
         rgb_response = {k: v.tolist() for k, v in response.items()}
+        print("RGB 처리 완료")
 
         '''
         rgb_response 결과 예시
