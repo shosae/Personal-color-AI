@@ -200,13 +200,15 @@ class PredictService:
             }
         
         response = requests.post(API_URL, headers=headers, data=json.dumps(data))
-    
+        
+        
         if response.status_code == 200:
             result = response.json()
             response_text = result['choices'][0]['message']['content'].strip()
-
+            #print(response_text)
             # AI 응답에서 퍼스널 컬러, 각 카테고리별 패션 추천 및 설명 추출
             parse_result = parse_ai_response(response_text)
+            
             
             # 포맷 확인 및 재요청 로직
             if parse_result is None:
